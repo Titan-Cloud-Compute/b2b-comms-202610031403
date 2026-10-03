@@ -22,6 +22,7 @@ function arr<T>(v: T[] | null | undefined): T[] {
     <div class="orders-page" data-testid="orders-page">
       <header class="page-header">
         <h1>Orders</h1>
+        <a href="#/invoices" data-testid="orders-invoices-link">Invoices</a>
       </header>
 
       @if (error()) { <p class="error" role="alert" data-testid="orders-error">{{ error() }}</p> }

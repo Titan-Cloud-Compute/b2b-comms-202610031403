@@ -321,3 +321,22 @@ model CustomerInvitation {
 
   @@index([email])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Story: invoice-generation — one invoice per CONFIRMED order.
+// orderId / vendorUserId / customerUserId are plain FK columns (no Prisma
+// relation) so the order-management and auth tables stay untouched.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id             String   @id @default(cuid())
+  orderId        String   @unique
+  vendorUserId   String
+  customerUserId String
+  number         String   @unique
+  totalCents     Int
+  createdAt      DateTime @default(now())
+
+  @@index([vendorUserId])
+  @@index([customerUserId])
+}
