@@ -254,12 +254,14 @@ export class LoginComponent {
 
   private mapRole(
     backendRole: string,
-  ): 'USER' | 'ADMIN' | 'SUPER_ADMIN' {
+  ): 'USER' | 'MANAGER' | 'ADMIN' | 'SUPER_ADMIN' {
     switch (backendRole) {
       case 'ADMIN':
         return 'ADMIN';
       case 'SUPER_ADMIN':
         return 'SUPER_ADMIN';
+      case 'MANAGER':
+        return 'MANAGER';
       default:
         return 'USER';
     }
