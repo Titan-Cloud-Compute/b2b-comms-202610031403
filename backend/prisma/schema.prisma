@@ -235,3 +235,69 @@ model VendorDocument {
 
   @@index([vendorId])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Story: order-management — vendor catalog, purchase orders, customer notices.
+// vendorUserId / customerUserId are plain FK columns (no Prisma relation) so the
+// auth User model and the shared-channel tables stay untouched.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+}
+
+model Product {
+  id             String      @id @default(cuid())
+  vendorUserId   String
+  name           String
+  description    String?
+  unitPriceCents Int         @default(0)
+  active         Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  orderItems     OrderItem[]
+
+  @@index([vendorUserId])
+}
+
+model Order {
+  id                    String              @id @default(cuid())
+  customerUserId        String
+  vendorUserId          String
+  status                OrderStatus         @default(PENDING)
+  estimatedDeliveryDate DateTime?
+  confirmedAt           DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  items                 OrderItem[]
+  notifications         OrderNotification[]
+
+  @@index([vendorUserId, status])
+  @@index([customerUserId])
+}
+
+model OrderItem {
+  id             String  @id @default(cuid())
+  orderId        String
+  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity       Int
+  unitPriceCents Int
+
+  @@index([orderId])
+}
+
+model OrderNotification {
+  id        String    @id @default(cuid())
+  userId    String
+  orderId   String
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  kind      String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}

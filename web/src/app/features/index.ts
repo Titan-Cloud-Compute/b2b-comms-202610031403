@@ -54,4 +54,18 @@ export const FEATURE_ROUTES: Routes = [
       },
     ],
   },
+  // Story: order-management — customer catalog/purchase orders + vendor order queue.
+  {
+    path: 'orders',
+    loadComponent: () => import('../shared/layout.component').then(m => m.LayoutComponent),
+    canActivate: [authGuard],
+    data: { rendersSupportFooterInLayout: true },
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./order-management/order-management.component').then(m => m.OrderManagementComponent),
+      },
+    ],
+  },
 ];
