@@ -7,7 +7,7 @@ import { Prisma } from '@prisma/client';
 
 const PRISMA_DIR = join(__dirname, '..', '..', '..', 'prisma');
 const schema = readFileSync(join(PRISMA_DIR, 'schema.prisma'), 'utf8');
-const MIGRATION = join(PRISMA_DIR, 'migrations', '0010_notification_preferences', 'migration.sql');
+const MIGRATION = join(PRISMA_DIR, 'migrations', '0011_notification_preferences', 'migration.sql');
 const sql = existsSync(MIGRATION) ? readFileSync(MIGRATION, 'utf8') : '';
 
 describe('notification-preferences schema', () => {
