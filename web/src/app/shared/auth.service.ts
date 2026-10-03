@@ -107,9 +107,9 @@ export class AuthService {
    */
   private prefsUrl(): string {
     try {
-      return new URL('api/users/me/notification-preferences', document.baseURI).toString();
+      return new URL('api/notification-preferences', document.baseURI).toString();
     } catch {
-      return 'api/users/me/notification-preferences';
+      return 'api/notification-preferences';
     }
   }
 
@@ -144,16 +144,6 @@ export class AuthService {
   setDiagnosticReadyEmail(value: boolean): void {
     this._diagnosticReadyEmail.set(value);
     this.write('diagnosticReadyEmail', value ? '1' : '0');
-    // Persist on the ACCOUNT too (the generation worker reads it there when the
-    // report finishes and the tab is long gone). Optimistic: the UI already
-    // shows the new state; a failed write leaves the local value in place.
-    if (PREVIEW_MODE) return;
-    void fetch(this.prefsUrl(), {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ diagnosticReadyEmail: value }),
-    }).catch(() => undefined);
   }
 
   /**

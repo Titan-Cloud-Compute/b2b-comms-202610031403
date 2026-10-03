@@ -8,6 +8,7 @@ import { RequestMethod } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import type { AuditService } from '../../audit/audit.service';
 import type { PrismaService } from '../../prisma/prisma.service';
+import type { NotificationPreferencesService } from '../notification-preferences/notification-preferences.service';
 import type { SharedChannelService } from '../shared-channel/shared-channel.service';
 import { FEATURE_MODULES } from '../index';
 import { OrderManagementController } from './order-management.controller';
@@ -24,7 +25,7 @@ type Order = {
   items: unknown[];
 };
 
-function makeDeps() {
+function makeDeps(orderAlerts = true) {
   const products = [
     { id: 'p1', vendorUserId: 'vendor', name: 'Widget', unitPriceCents: 500, active: true },
     { id: 'p2', vendorUserId: 'vendor', name: 'Gadget', unitPriceCents: 1200, active: true },
@@ -88,12 +89,17 @@ function makeDeps() {
   };
   const audit = { record: jest.fn(async () => undefined) };
   const channels = { postMessage: jest.fn(async () => ({ id: 'm1' })) };
+  const prefs = {
+    allows: jest.fn(async (_u: string, type: 'ORDER' | 'MESSAGE') => (type === 'ORDER' ? orderAlerts : true)),
+    filterOrderNotifications: jest.fn(async <T>(_u: string, rows: T[]) => (orderAlerts ? rows : [])),
+  };
   const svc = new OrderManagementService(
     prisma as unknown as PrismaService,
     audit as unknown as AuditService,
     channels as unknown as SharedChannelService,
+    prefs as unknown as NotificationPreferencesService,
   );
-  return { prisma, audit, channels, svc, orders, notifications };
+  return { prisma, audit, channels, svc, orders, notifications, prefs };
 }
 
 const CUSTOMER = { userId: 'cust', role: 'USER' };
@@ -191,5 +197,17 @@ describe('order-management API', () => {
     await expect(
       svc.confirmOrder({ userId: 'other', role: 'MANAGER' }, order.id, { estimatedDeliveryDate: '2026-11-01' }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('with order alerts off, confirming creates no order alert but still posts to the channel', async () => {
+    const { svc, channels, notifications } = makeDeps(false);
+    const order = await svc.createOrder(CUSTOMER, {
+      vendorId: 'vendor',
+      items: [{ productId: 'p1', quantity: 1 }],
+    });
+    await svc.confirmOrder(VENDOR, order.id, { estimatedDeliveryDate: '2026-11-01' });
+    expect(notifications).toHaveLength(0);
+    expect(await svc.listNotifications(CUSTOMER)).toEqual([]);
+    expect(channels.postMessage).toHaveBeenCalled();
   });
 });

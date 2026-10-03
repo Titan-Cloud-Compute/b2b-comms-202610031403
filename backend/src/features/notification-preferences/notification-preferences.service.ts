@@ -84,6 +84,12 @@ export class NotificationPreferencesService {
     return type === 'ORDER' ? p.orderAlerts : p.messageAlerts;
   }
 
+  /** Keeps only order notifications the preference in effect at their time allowed. */
+  async filterOrderNotifications<T extends { createdAt: Date }>(userId: string, rows: T[]): Promise<T[]> {
+    const changes = await this.history(userId);
+    return rows.filter((n) => preferenceAt(changes, n.createdAt).orderAlerts);
+  }
+
   /**
    * Alerts feed: order notifications plus channel messages from others, each
    * kept only if the preference in effect at the event's time allowed it.

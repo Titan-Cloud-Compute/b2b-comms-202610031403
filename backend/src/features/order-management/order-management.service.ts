@@ -8,6 +8,7 @@ import {
 import type { UserRole } from '@prisma/client';
 import { AuditService } from '../../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationPreferencesService } from '../notification-preferences/notification-preferences.service';
 import { SharedChannelService, VENDOR_ROLES } from '../shared-channel/shared-channel.service';
 
 export type OrderStatusValue = 'PENDING' | 'CONFIRMED';
@@ -32,6 +33,7 @@ export class OrderManagementService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly channels: SharedChannelService,
+    private readonly prefs: NotificationPreferencesService,
   ) {}
 
   private assertVendor(caller: Caller): void {
@@ -162,12 +164,14 @@ export class OrderManagementService {
     });
   }
 
-  listNotifications(caller: Caller) {
-    return this.prisma.orderNotification.findMany({
+  /** Order alerts for the caller, kept only where the preference in effect at the time allowed them. */
+  async listNotifications(caller: Caller) {
+    const rows = await this.prisma.orderNotification.findMany({
       where: { userId: caller.userId },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+    return this.prefs.filterOrderNotifications(caller.userId, rows);
   }
 
   /** Vendor confirms a pending order with an estimated delivery date and notifies the customer. */
@@ -192,9 +196,13 @@ export class OrderManagementService {
     });
     const etaText = eta.toISOString().slice(0, 10);
     const body = `Your order ${order.id} has been confirmed. Estimated delivery: ${etaText}.`;
-    await this.prisma.orderNotification.create({
-      data: { userId: order.customerUserId, orderId: order.id, kind: ORDER_CONFIRMED_KIND, body },
-    });
+    // Respect the customer's order-alert preference; the channel message below is
+    // the shared conversation and is always written (the feed gates message alerts).
+    if (await this.prefs.allows(order.customerUserId, 'ORDER')) {
+      await this.prisma.orderNotification.create({
+        data: { userId: order.customerUserId, orderId: order.id, kind: ORDER_CONFIRMED_KIND, body },
+      });
+    }
     await this.notifyViaChannel(caller.userId, order.customerUserId, body);
     await this.audit.record({
       actor: 'USER',
