@@ -41,10 +41,18 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     adminOnly: true,
     tab: 'app-settings',
   },
+  {
+    path: '/admin/audit-log',
+    label: 'Audit Log',
+    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg>',
+    adminOnly: true,
+    tab: 'audit-log',
+  },
 ];
 
 export const ADMIN_TAB_MAP: Record<string, string> = {
   'Overview': 'overview',
   'Users': 'users',
   'App Settings': 'app-settings',
+  'Audit Log': 'audit-log',
 };

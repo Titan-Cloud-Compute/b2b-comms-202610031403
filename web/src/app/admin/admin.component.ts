@@ -5,8 +5,9 @@ import { AuthService } from '../shared/auth.service';
 
 import { AdminOverviewComponent } from './overview/admin-overview.component';
 import { AdminUsersComponent } from './users/admin-users.component';
+import { AdminAuditLogComponent } from './audit-log/admin-audit-log.component';
 
-type AdminTab = 'overview' | 'users' | 'app-settings';
+type AdminTab = 'overview' | 'users' | 'app-settings' | 'audit-log';
 
 @Component({
   selector: 'app-admin',
@@ -15,6 +16,7 @@ type AdminTab = 'overview' | 'users' | 'app-settings';
     CommonModule,
     AdminOverviewComponent,
     AdminUsersComponent,
+    AdminAuditLogComponent,
   ],
   template: `
     <div class="admin-page" data-placeholder>
@@ -40,6 +42,9 @@ type AdminTab = 'overview' | 'users' | 'app-settings';
         }
         @if (activeTab() === 'users') {
           <app-admin-users />
+        }
+        @if (activeTab() === 'audit-log') {
+          <app-admin-audit-log />
         }
       </div>
     </div>
@@ -142,6 +147,7 @@ export class AdminComponent implements OnInit {
       'users': 'users',
       'connections': 'app-settings',
       'app-settings': 'app-settings',
+      'audit-log': 'audit-log',
     };
 
     const url = this.router.url;
@@ -154,7 +160,7 @@ export class AdminComponent implements OnInit {
 
     this.route.queryParams.subscribe(params => {
       if (params['tab']) {
-        const validTabs: AdminTab[] = ['overview', 'users', 'app-settings'];
+        const validTabs: AdminTab[] = ['overview', 'users', 'app-settings', 'audit-log'];
         if (validTabs.includes(params['tab'] as AdminTab)) {
           this.auth.setAdminTab(params['tab'] as AdminTab);
         }
@@ -167,6 +173,7 @@ export class AdminComponent implements OnInit {
       'overview': 'Admin Overview',
       'users': 'Users',
       'app-settings': 'App Settings',
+      'audit-log': 'Audit Log',
     };
     return titles[this.activeTab()] ?? 'Admin Panel';
   }
@@ -176,6 +183,7 @@ export class AdminComponent implements OnInit {
       'overview': 'System statistics and recent activity',
       'users': 'View all users and provision new accounts',
       'app-settings': 'Configure connections and application contexts',
+      'audit-log': 'Chronological list of user actions and system events, newest first',
     };
     return subtitles[this.activeTab()] ?? 'Manage system configuration';
   }
