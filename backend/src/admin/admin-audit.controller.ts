@@ -61,7 +61,13 @@ export class AdminAuditController {
 
     const [rows, total] = await this.prisma.runAsAdmin((tx) =>
       Promise.all([
-        tx.auditLog.findMany({ where, orderBy: { createdAt: 'desc' }, take, skip }),
+        tx.auditLog.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          take,
+          skip,
+          include: { actorUser: { select: { id: true, email: true, name: true } } },
+        }),
         tx.auditLog.count({ where }),
       ]),
     );

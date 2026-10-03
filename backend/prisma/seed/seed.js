@@ -72,6 +72,36 @@ async function main() {
   }
 
   console.log(`[seed] colossus_accounts upserted ${count}`);
+
+  // Seed a baseline audit trail so the admin Audit Log is never empty on a
+  // fresh deploy. Idempotent: only runs while the table has no rows.
+  try {
+    const existing = await prisma.auditLog.count();
+    if (existing === 0) {
+      const users = await prisma.user.findMany({
+        where: { email: { in: accounts.map((a) => a.email) } },
+        select: { id: true, role: true, email: true },
+      });
+      const now = Date.now();
+      const rows = [
+        { actor: 'SYSTEM', actorUserId: null, action: 'system.seed', payloadJson: { accounts: count } },
+        ...users.map((u, i) => ({
+          actor: u.role === 'ADMIN' ? 'ADMIN' : 'USER',
+          actorUserId: u.id,
+          action: 'auth.account_provisioned',
+          payloadJson: { role: u.role },
+          createdAt: new Date(now + (i + 1) * 1000),
+        })),
+      ];
+      rows[0].createdAt = new Date(now);
+      for (const data of rows) {
+        await prisma.auditLog.create({ data });
+      }
+      console.log(`[seed] audit_log seeded ${rows.length}`);
+    }
+  } catch (error) {
+    console.error('[seed] audit_log seed skipped:', error.message);
+  }
 }
 
 main()

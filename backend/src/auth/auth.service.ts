@@ -15,6 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AppConfigService } from '../config/config.service';
 import type { SessionPayload } from './session.types';
 import { MailerService } from './mailer.service';
+import { AuditLogService } from '../common/audit-log.service';
 
 /** Default org seat cap when SystemSetting ORG_MAX_SEATS is unset. */
 const DEFAULT_ORG_MAX_SEATS = 5;
@@ -51,7 +52,37 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: AppConfigService,
     private readonly mailer: MailerService,
+    private readonly auditLog?: AuditLogService,
   ) {}
+
+  /** Best-effort audit write; never blocks or fails the auth flow. */
+  private async audit(
+    actor: AuditActor,
+    action: string,
+    actorUserId: string | null,
+    payload: Record<string, unknown> = {},
+  ): Promise<void> {
+    if (!this.auditLog) return;
+    try {
+      await this.auditLog.write({ actor, actorUserId, action, payload });
+    } catch (err) {
+      this.logger.warn(`audit write failed for ${action}: ${(err as Error).message}`);
+    }
+  }
+
+  /** Map a user's role to the audit actor kind. */
+  private actorFor(user: Pick<User, 'role'>): AuditActor {
+    return String(user.role) === 'ADMIN' ? AuditActor.ADMIN : AuditActor.USER;
+  }
+
+  /** Record an explicit sign-out. */
+  async recordLogout(userId: string | null, role?: string | null): Promise<void> {
+    await this.audit(
+      role === 'ADMIN' ? AuditActor.ADMIN : userId ? AuditActor.USER : AuditActor.SYSTEM,
+      'auth.logout',
+      userId,
+    );
+  }
 
   /**
    * Atomically claim an unconsumed, unexpired registration token. Returns the
@@ -210,6 +241,11 @@ export class AuthService {
 
     await this.applyModelGrant(user.id, grantedModelIds);
 
+    await this.audit(this.actorFor(user), 'auth.signup', user.id, {
+      role: user.role,
+      bootstrap: isBootstrap,
+    });
+
     return { user, token: await this.issueToken(user) };
   }
 
@@ -219,6 +255,9 @@ export class AuthService {
       tx.user.findUnique({ where: { email } }),
     );
     if (!user || !user.passwordHash) {
+      await this.audit(AuditActor.SYSTEM, 'auth.login_failed', null, {
+        reason: 'unknown_account',
+      });
       throw new UnauthorizedException('invalid credentials');
     }
     let ok = false;
@@ -227,7 +266,14 @@ export class AuthService {
     } catch {
       ok = false;
     }
-    if (!ok) throw new UnauthorizedException('invalid credentials');
+    if (!ok) {
+      await this.audit(AuditActor.SYSTEM, 'auth.login_failed', user.id, {
+        reason: 'bad_password',
+      });
+      throw new UnauthorizedException('invalid credentials');
+    }
+
+    await this.audit(this.actorFor(user), 'auth.login', user.id);
 
     return { user, token: await this.issueToken(user) };
   }
@@ -274,6 +320,7 @@ export class AuthService {
       tx.user.update({ where: { id: userId }, data: { passwordHash } }),
     );
     this.logger.log(`password changed for user=${userId}`);
+    await this.audit(this.actorFor(updated), 'auth.password_change', userId);
     return updated;
   }
 
