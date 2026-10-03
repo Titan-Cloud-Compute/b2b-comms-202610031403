@@ -37,10 +37,14 @@ async function mockApi(page: Page): Promise<void> {
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
     if (method === 'POST' && apiPath === 'auth/login') {
-      store.user = { id: '1', email: 'user@example.com', role: 'USER' };
+      let postBody: { email?: string } = {};
+      try { postBody = req.postDataJSON() as { email?: string }; } catch { /* ignore */ }
+      const email = postBody?.email ?? 'user@example.com';
+      const role = email.includes('admin') ? 'ADMIN' : 'USER';
+      store.user = { id: '1', email, role };
       return json(store.user);
     }
-    if (method === 'GET' && apiPath === 'users/me') {
+    if (method === 'GET' && (apiPath === 'users/me' || apiPath === 'auth/me')) {
       return store.user ? json(store.user) : json({ message: 'Unauthorized' }, 401);
     }
     if (method === 'POST' && apiPath === 'auth/password-reset/request') return json({ ok: true });
@@ -56,6 +60,14 @@ async function login(page: Page): Promise<void> {
   await page.locator('#password').fill('password1234');
   await page.locator('button[type="submit"]').click();
   await expect(page).toHaveURL(/#\/dashboard/, { timeout: 10_000 });
+}
+
+async function loginAsAdmin(page: Page): Promise<void> {
+  await page.goto('/#/login');
+  await page.locator('#email').fill('admin@example.com');
+  await page.locator('#password').fill('password1234');
+  await page.locator('button[type="submit"]').click();
+  await expect(page).toHaveURL(/#\/admin\/overview/, { timeout: 10_000 });
 }
 
 test.use({ serviceWorkers: 'block' });
@@ -102,8 +114,20 @@ test('forgot-password → request → reset with token → back to login', async
 });
 
 test('every kept route renders a data-free placeholder with no locale-specific strings', async ({ page }) => {
+  const userRoutes = ['dashboard', 'settings'];
+  const adminRoutes = ['admin/overview', 'admin/users', 'admin/app-settings'];
+
+  // Visit user-accessible routes as a regular USER.
   await login(page);
-  for (const r of KEPT_ROUTES) {
+  for (const r of userRoutes) {
+    await page.goto(`/#/${r}`);
+    await expect(page.locator('main.main-content [data-placeholder]').first(), r).toBeVisible();
+    expect(await page.locator('body').innerText(), r).not.toMatch(LOCALE_GUARD);
+  }
+
+  // Visit admin-only routes after logging in as an ADMIN.
+  await loginAsAdmin(page);
+  for (const r of adminRoutes) {
     await page.goto(`/#/${r}`);
     await expect(page.locator('main.main-content [data-placeholder]').first(), r).toBeVisible();
     expect(await page.locator('body').innerText(), r).not.toMatch(LOCALE_GUARD);
