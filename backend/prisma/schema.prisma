@@ -137,3 +137,41 @@ model ColossusAccount {
 
   @@map("colossus_accounts")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Vendor onboarding (Story: vendor-onboarding)
+// userId is a plain FK column (no Prisma relation) so the auth User model stays untouched.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum VendorDocumentStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model VendorProfile {
+  id           String           @id @default(cuid())
+  userId       String           @unique
+  companyName  String
+  contactName  String
+  contactEmail String
+  contactPhone String?
+  address      String?
+  completed    Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  documents    VendorDocument[]
+}
+
+model VendorDocument {
+  id        String               @id @default(cuid())
+  vendorId  String
+  vendor    VendorProfile        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  fileKey   String
+  name      String
+  type      String
+  status    VendorDocumentStatus @default(PENDING_REVIEW)
+  createdAt DateTime             @default(now())
+
+  @@index([vendorId])
+}

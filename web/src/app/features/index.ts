@@ -1,4 +1,6 @@
 import { Routes } from '@angular/router';
+import { authGuard } from '../shared/auth.guard';
+import { vendorProfileCompleteGuard } from './vendor-onboarding/vendor-onboarding.guard';
 
 /**
  * Feature route registry.
@@ -14,4 +16,28 @@ import { Routes } from '@angular/router';
  *
  * Or add routes here directly.
  */
-export const FEATURE_ROUTES: Routes = [];
+export const FEATURE_ROUTES: Routes = [
+  // Story: vendor-onboarding — rendered inside the signed-in sidebar shell.
+  {
+    path: 'vendor',
+    loadComponent: () => import('../shared/layout.component').then(m => m.LayoutComponent),
+    canActivate: [authGuard],
+    data: { rendersSupportFooterInLayout: true },
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      {
+        path: 'onboarding',
+        loadComponent: () => import('./vendor-onboarding/vendor-profile.component').then(m => m.VendorProfileComponent),
+      },
+      {
+        path: 'dashboard',
+        canActivate: [vendorProfileCompleteGuard],
+        loadComponent: () => import('./vendor-onboarding/vendor-dashboard.component').then(m => m.VendorDashboardComponent),
+      },
+      {
+        path: 'documents',
+        loadComponent: () => import('./vendor-onboarding/vendor-documents.component').then(m => m.VendorDocumentsComponent),
+      },
+    ],
+  },
+];
