@@ -40,4 +40,18 @@ export const FEATURE_ROUTES: Routes = [
       },
     ],
   },
+  // Story: shared-channel — rendered inside the authenticated layout.
+  {
+    path: 'channels',
+    loadComponent: () => import('../shared/layout.component').then(m => m.LayoutComponent),
+    canActivate: [authGuard],
+    data: { rendersSupportFooterInLayout: true },
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./shared-channel/shared-channel.component').then(m => m.SharedChannelComponent),
+      },
+    ],
+  },
 ];

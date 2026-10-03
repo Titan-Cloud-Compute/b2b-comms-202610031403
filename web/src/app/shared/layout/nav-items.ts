@@ -19,6 +19,11 @@ export const FIRM_NAV_ITEMS: NavItem[] = [
     label: 'Vendor',
     icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>',
   },
+  {
+    path: '/channels',
+    label: 'Channels',
+    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  },
 ];
 
 /** Entries shown to EVERY signed-in role, rendered outside the role branches. */

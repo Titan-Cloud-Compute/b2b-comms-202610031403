@@ -12,6 +12,7 @@
  * Or simply add it here directly.
  */
 import { VendorOnboardingModule } from './vendor-onboarding/vendor-onboarding.module';
+import { SharedChannelModule } from './shared-channel/shared-channel.module';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const FEATURE_MODULES: any[] = [VendorOnboardingModule];
+export const FEATURE_MODULES: any[] = [VendorOnboardingModule, SharedChannelModule];

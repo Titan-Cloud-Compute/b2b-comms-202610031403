@@ -53,6 +53,66 @@ model User {
   tokensCreated  RegistrationToken[] @relation("CreatedTokens")
   tokensConsumed RegistrationToken[] @relation("ConsumedTokens")
   passwordResetTokens PasswordResetToken[]
+
+  // Story: shared-channel (back-relations only; no columns added to "User").
+  customerProfile   Customer?
+  channelsCreated   SharedChannel[] @relation("ChannelCreator")
+  channelMemberships ChannelMember[]
+  messages          Message[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Story: shared-channel — customers, shared channels, members and messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ChannelMemberRole {
+  VENDOR
+  CUSTOMER
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String?
+  createdAt   DateTime @default(now())
+}
+
+model SharedChannel {
+  id          String          @id @default(cuid())
+  name        String
+  createdById String
+  createdBy   User            @relation("ChannelCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  members     ChannelMember[]
+  messages    Message[]
+
+  @@index([createdById])
+}
+
+model ChannelMember {
+  id        String            @id @default(cuid())
+  channelId String
+  channel   SharedChannel     @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      ChannelMemberRole
+  createdAt DateTime          @default(now())
+
+  @@unique([channelId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id        String        @id @default(cuid())
+  channelId String
+  channel   SharedChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime      @default(now())
+
+  @@index([channelId, createdAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
