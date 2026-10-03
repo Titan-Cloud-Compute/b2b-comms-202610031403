@@ -340,3 +340,20 @@ model Invoice {
   @@index([vendorUserId])
   @@index([customerUserId])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Story: notification-preferences — effective-dated per-user alert toggles.
+// Each save appends a row; the row in effect at an event's time decides whether
+// that event shows in the user's alerts feed, so earlier alerts never change.
+// userId is a plain FK column (no Prisma relation) so the auth User model stays untouched.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model NotificationPreferenceChange {
+  id            String   @id @default(cuid())
+  userId        String
+  orderAlerts   Boolean  @default(true)
+  messageAlerts Boolean  @default(true)
+  effectiveAt   DateTime @default(now())
+
+  @@index([userId, effectiveAt])
+}

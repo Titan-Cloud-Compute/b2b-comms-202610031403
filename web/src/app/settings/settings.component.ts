@@ -123,10 +123,4 @@ export class SettingsComponent {
     name: this.auth.user()?.name || '',
     email: this.auth.user()?.email || '',
   };
-
-  notifications = {
-    modules: true,
-    weekly: true,
-    docs: false,
-  };
 }

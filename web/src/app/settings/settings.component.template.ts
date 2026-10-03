@@ -56,18 +56,10 @@ export const settingsComponentTemplate = `
         @if (activeTab() === 'notifications') {
         <section class="card" role="tabpanel" id="settings-panel-notifications" aria-labelledby="settings-tab-notifications">
           <h2>{{ 'Notifications' }}</h2>
-          <label class="toggle-row">
-            <span>{{ 'Email for new modules' }}</span>
-            <input type="checkbox" [(ngModel)]="notifications.modules" />
-          </label>
-          <label class="toggle-row">
-            <span>{{ 'Weekly summary' }}</span>
-            <input type="checkbox" [(ngModel)]="notifications.weekly" />
-          </label>
-          <label class="toggle-row">
-            <span>{{ 'Document processing alerts' }}</span>
-            <input type="checkbox" [(ngModel)]="notifications.docs" />
-          </label>
+          <p class="toggle-row">
+            <span>{{ 'Order and message alerts' }}</span>
+            <a href="#/notifications" data-testid="settings-notification-preferences-link">{{ 'Manage alert preferences' }}</a>
+          </p>
           <!-- Account-level opt-in shared with the diagnostic page: report
                generation is long running, so the user can be emailed on
                completion instead of watching the progress panel. -->

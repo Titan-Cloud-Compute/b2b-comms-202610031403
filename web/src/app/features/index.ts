@@ -104,4 +104,20 @@ export const FEATURE_ROUTES: Routes = [
       },
     ],
   },
+  // Story: notification-preferences — alert toggles + filtered alerts feed.
+  {
+    path: 'notifications',
+    loadComponent: () => import('../shared/layout.component').then(m => m.LayoutComponent),
+    canActivate: [authGuard],
+    data: { rendersSupportFooterInLayout: true },
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./notification-preferences/notification-preferences.component').then(
+            m => m.NotificationPreferencesComponent,
+          ),
+      },
+    ],
+  },
 ];

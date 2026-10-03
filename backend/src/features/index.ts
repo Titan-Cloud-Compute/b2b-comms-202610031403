@@ -16,6 +16,7 @@ import { SharedChannelModule } from './shared-channel/shared-channel.module';
 import { OrderManagementModule } from './order-management/order-management.module';
 import { CustomerInviteModule } from './customer-invite/customer-invite.module';
 import { InvoiceGenerationModule } from './invoice-generation/invoice-generation.module';
+import { NotificationPreferencesModule } from './notification-preferences/notification-preferences.module';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const FEATURE_MODULES: any[] = [
@@ -24,4 +25,5 @@ export const FEATURE_MODULES: any[] = [
   OrderManagementModule,
   CustomerInviteModule,
   InvoiceGenerationModule,
+  NotificationPreferencesModule,
 ];
