@@ -33,7 +33,8 @@ function newState(): State {
 }
 
 async function mockApi(page: Page, state: State): Promise<void> {
-  await page.route('**/api/**', async (route) => {
+  // Register at context level so download navigation requests are also intercepted.
+  await page.context().route('**/api/**', async (route) => {
     const req = route.request();
     const method = req.method().toUpperCase();
     const url = new URL(req.url());
@@ -135,6 +136,8 @@ test('vendor generates an invoice; customer sees and downloads it as a PDF', asy
     customer.waitForEvent('download'),
     customer.getByTestId('invoice-download-i1').click(),
   ]);
+  // Await save to disk so the route handler has finished before we read state.
+  await download.path();
   expect(download.suggestedFilename()).toBe('INV-000001.pdf');
   expect(state.downloads).toEqual(['INV-000001']);
   await expect(customer.getByTestId('invoices-error')).toHaveCount(0);

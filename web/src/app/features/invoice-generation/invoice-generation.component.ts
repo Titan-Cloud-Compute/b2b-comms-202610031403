@@ -54,7 +54,7 @@ function errorMessage(err: unknown, fallback: string): string {
             <li [attr.data-testid]="'invoice-' + inv.id">
               <strong>{{ inv.number }}</strong> — Order {{ inv.orderId }} — {{ price(inv.totalCents) }}
               — {{ inv.createdAt | date: 'mediumDate' }}
-              <a class="btn-link" [href]="downloadUrl(inv.orderId)" [attr.download]="inv.number + '.pdf'" [attr.data-testid]="'invoice-download-' + inv.id">Download PDF</a>
+              <a class="btn-link" [href]="downloadUrl(inv.orderId)" [attr.data-testid]="'invoice-download-' + inv.id">Download PDF</a>
             </li>
           } @empty {
             <li class="muted">No invoices yet.</li>
