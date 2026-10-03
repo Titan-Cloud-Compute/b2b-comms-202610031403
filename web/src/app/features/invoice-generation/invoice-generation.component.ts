@@ -1,12 +1,17 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { forkJoin, of } from 'rxjs';
 import { AuthService } from '../../shared/auth.service';
 import { OrderManagementApi, OrderView } from '../order-management/order-management-api.service';
 import { InvoiceGenerationApi, InvoiceView } from './invoice-generation-api.service';
 
 function arr<T>(v: T[] | null | undefined): T[] {
   return Array.isArray(v) ? v : [];
+}
+
+function errorMessage(err: unknown, fallback: string): string {
+  const msg = (err as { error?: { message?: unknown } } | null)?.error?.message;
+  if (Array.isArray(msg)) return msg.join(', ') || fallback;
+  return typeof msg === 'string' && msg.trim() ? msg : fallback;
 }
 
 /** Story: invoice-generation — vendors invoice confirmed orders; customers download them. */
@@ -81,16 +86,18 @@ export class InvoiceGenerationComponent implements OnInit {
   }
 
   load(): void {
-    forkJoin({
-      invoices: this.api.list(),
-      orders: this.isVendor() ? this.orders.vendorQueue('CONFIRMED') : of([] as OrderView[]),
-    }).subscribe({
-      next: ({ invoices, orders }) => {
-        this.invoices.set(arr(invoices));
-        this.confirmedOrders.set(arr(orders).filter(o => o.status === 'CONFIRMED'));
-      },
-      error: () => this.error.set('Could not load invoices.'),
+    // Load invoices and confirmed orders independently so one failing request
+    // never blanks the other list.
+    this.api.list().subscribe({
+      next: invoices => this.invoices.set(arr(invoices)),
+      error: err => this.error.set(errorMessage(err, 'Could not load invoices.')),
     });
+    if (this.isVendor()) {
+      this.orders.vendorQueue('CONFIRMED').subscribe({
+        next: orders => this.confirmedOrders.set(arr(orders).filter(o => o.status === 'CONFIRMED')),
+        error: err => this.error.set(errorMessage(err, 'Could not load confirmed orders.')),
+      });
+    }
   }
 
   invoiceFor(orderId: string): InvoiceView | undefined {
@@ -105,8 +112,8 @@ export class InvoiceGenerationComponent implements OnInit {
         this.invoices.update(list => [inv, ...list.filter(i => i.orderId !== inv.orderId)]);
         this.busy.set(false);
       },
-      error: () => {
-        this.error.set('Could not generate the invoice.');
+      error: err => {
+        this.error.set(errorMessage(err, 'Could not generate the invoice.'));
         this.busy.set(false);
         this.load();
       },

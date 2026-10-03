@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { AuthService } from '../../shared/auth.service';
+import { InvoiceGenerationApi, InvoiceView } from '../invoice-generation/invoice-generation-api.service';
 import {
   OrderManagementApi,
   OrderNotificationView,
@@ -60,6 +61,13 @@ function arr<T>(v: T[] | null | undefined): T[] {
                 } @else if (o.estimatedDeliveryDate) {
                   <div>Delivery: {{ o.estimatedDeliveryDate | date: 'mediumDate' : 'UTC' }}</div>
                 }
+                @if (o.status === 'CONFIRMED') {
+                  @if (invoiceFor(o.id); as inv) {
+                    <a class="btn-link" [href]="invoiceDownloadUrl(o.id)" [attr.download]="inv.number + '.pdf'" [attr.data-testid]="'order-invoice-download-' + o.id">Download invoice ({{ inv.number }})</a>
+                  } @else {
+                    <button type="button" class="btn-primary" [disabled]="busy()" (click)="generateInvoice(o.id)" [attr.data-testid]="'order-generate-invoice-' + o.id">Generate invoice</button>
+                  }
+                }
               </li>
             } @empty {
               <li class="muted">No orders yet.</li>
@@ -110,6 +118,11 @@ function arr<T>(v: T[] | null | undefined): T[] {
                 <strong>Order {{ o.id }}</strong> — <span [attr.data-testid]="'my-order-status-' + o.id">{{ statusLabel(o.status) }}</span>
                 @if (o.estimatedDeliveryDate) { — delivery {{ o.estimatedDeliveryDate | date: 'mediumDate' : 'UTC' }} }
                 <div class="muted">{{ itemsText(o) }}</div>
+                @if (o.status === 'CONFIRMED') {
+                  @if (invoiceFor(o.id); as inv) {
+                    <a class="btn-link" [href]="invoiceDownloadUrl(o.id)" [attr.download]="inv.number + '.pdf'" [attr.data-testid]="'order-invoice-download-' + o.id">Download invoice ({{ inv.number }})</a>
+                  }
+                }
               </li>
             } @empty {
               <li class="muted">No orders yet.</li>
@@ -130,10 +143,12 @@ function arr<T>(v: T[] | null | undefined): T[] {
 export class OrderManagementComponent implements OnInit {
   private readonly api = inject(OrderManagementApi);
   private readonly auth = inject(AuthService);
+  private readonly invoiceApi = inject(InvoiceGenerationApi);
 
   readonly isVendor = computed(() => this.auth.hasRole('MANAGER', 'ADMIN', 'SUPER_ADMIN'));
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
+  readonly invoices = signal<InvoiceView[]>([]);
 
   // Customer state
   readonly vendors = signal<VendorOption[]>([]);
@@ -154,6 +169,7 @@ export class OrderManagementComponent implements OnInit {
   newProductPrice: number | null = null;
 
   ngOnInit(): void {
+    this.loadInvoices();
     if (this.isVendor()) {
       this.loadOwnProducts();
       this.loadQueue();
@@ -164,6 +180,38 @@ export class OrderManagementComponent implements OnInit {
       });
       this.loadCustomerData();
     }
+  }
+
+  invoiceFor(orderId: string): InvoiceView | undefined {
+    return this.invoices().find((i) => i.orderId === orderId);
+  }
+
+  invoiceDownloadUrl(orderId: string): string {
+    return this.invoiceApi.downloadUrl(orderId);
+  }
+
+  generateInvoice(orderId: string): void {
+    this.busy.set(true);
+    this.error.set(null);
+    this.invoiceApi.generate(orderId).subscribe({
+      next: (inv) => {
+        this.invoices.update((list) => [inv, ...list.filter((i) => i.orderId !== inv.orderId)]);
+        this.busy.set(false);
+      },
+      error: (err) => {
+        const msg = err?.error?.message;
+        this.error.set(typeof msg === 'string' && msg ? msg : 'Could not generate the invoice.');
+        this.busy.set(false);
+        this.loadInvoices();
+      },
+    });
+  }
+
+  private loadInvoices(): void {
+    this.invoiceApi.list().subscribe({
+      next: (list) => this.invoices.set(arr(list)),
+      error: () => this.invoices.set([]),
+    });
   }
 
   price(cents: number): string {
