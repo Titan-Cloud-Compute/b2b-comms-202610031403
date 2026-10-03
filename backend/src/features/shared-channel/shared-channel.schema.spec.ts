@@ -1,5 +1,5 @@
 /**
- * Story: shared-channel — schema + migration 0006 presence checks.
+ * Story: shared-channel — schema + shared-channel migration presence checks.
  */
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
@@ -9,7 +9,7 @@ const PRISMA_DIR = join(__dirname, '..', '..', '..', 'prisma');
 const schema = readFileSync(join(PRISMA_DIR, 'schema.prisma'), 'utf8');
 
 function migrationSql(): string {
-  const dir = readdirSync(join(PRISMA_DIR, 'migrations')).find((d) => d.startsWith('0006_'));
+  const dir = readdirSync(join(PRISMA_DIR, 'migrations')).find((d) => /^\d{4}_shared_channel$/.test(d));
   if (!dir) return '';
   const file = join(PRISMA_DIR, 'migrations', dir, 'migration.sql');
   return existsSync(file) ? readFileSync(file, 'utf8') : '';
@@ -30,17 +30,17 @@ describe('shared-channel schema', () => {
     );
   });
 
-  it('migration 0006 creates all four tables and the member role enum', () => {
+  it('shared-channel migration creates all four tables and the member role enum', () => {
     const sql = migrationSql();
     expect(sql).not.toBe('');
     for (const t of ['Customer', 'SharedChannel', 'ChannelMember', 'Message']) {
-      expect(sql).toContain(`CREATE TABLE "${t}"`);
+      expect(sql).toMatch(new RegExp(`CREATE TABLE (IF NOT EXISTS )?"${t}"`));
     }
     expect(sql).toContain('CREATE TYPE "ChannelMemberRole"');
     expect(sql).toContain('"ChannelMember_channelId_userId_key"');
   });
 
-  it('migration 0006 does not alter auth tables', () => {
+  it('shared-channel migration does not alter auth tables', () => {
     const sql = migrationSql();
     expect(sql).not.toMatch(/ALTER TABLE "User"/);
     expect(sql).not.toMatch(/DROP TABLE/);
