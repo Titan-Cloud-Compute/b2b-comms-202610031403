@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from '../shared/auth.guard';
+import { authGuard, roleGuard } from '../shared/auth.guard';
 import { vendorProfileCompleteGuard } from './vendor-onboarding/vendor-onboarding.guard';
 
 /**
@@ -39,6 +39,28 @@ export const FEATURE_ROUTES: Routes = [
         loadComponent: () => import('./vendor-onboarding/vendor-documents.component').then(m => m.VendorDocumentsComponent),
       },
     ],
+  },
+  // Story: customer-invite — ADMIN invite form inside the authenticated layout.
+  {
+    path: 'customers',
+    loadComponent: () => import('../shared/layout.component').then(m => m.LayoutComponent),
+    canActivate: [authGuard],
+    data: { rendersSupportFooterInLayout: true },
+    children: [
+      {
+        path: 'invite',
+        canActivate: [roleGuard('ADMIN')],
+        loadComponent: () =>
+          import('./customer-invite/customer-invite.component').then(m => m.CustomerInviteComponent),
+      },
+    ],
+  },
+  // Story: customer-invite — PUBLIC activation page opened from the invitation email.
+  {
+    path: 'customer-invite/accept',
+    loadComponent: () =>
+      import('./customer-invite/customer-invite-accept.component').then(m => m.CustomerInviteAcceptComponent),
+    data: { hideSupportFooter: true },
   },
   // Story: shared-channel — rendered inside the authenticated layout.
   {

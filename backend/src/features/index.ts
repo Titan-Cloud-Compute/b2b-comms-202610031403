@@ -14,6 +14,12 @@
 import { VendorOnboardingModule } from './vendor-onboarding/vendor-onboarding.module';
 import { SharedChannelModule } from './shared-channel/shared-channel.module';
 import { OrderManagementModule } from './order-management/order-management.module';
+import { CustomerInviteModule } from './customer-invite/customer-invite.module';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const FEATURE_MODULES: any[] = [VendorOnboardingModule, SharedChannelModule, OrderManagementModule];
+export const FEATURE_MODULES: any[] = [
+  VendorOnboardingModule,
+  SharedChannelModule,
+  OrderManagementModule,
+  CustomerInviteModule,
+];

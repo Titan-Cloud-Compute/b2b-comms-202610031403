@@ -21,4 +21,11 @@ export class MailerService {
     // integration tests can capture it without an SMTP relay.
     this.logger.log(`[password-reset] token for ${email}: ${token}`);
   }
+
+  /**
+   * Send a customer invitation containing a single-use activation link.
+   */
+  async sendCustomerInvitation(email: string, activationUrl: string): Promise<void> {
+    this.logger.log(`[customer-invite] activation link for ${email}: ${activationUrl}`);
+  }
 }

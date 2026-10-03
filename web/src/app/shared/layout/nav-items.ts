@@ -63,6 +63,12 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     adminOnly: true,
     tab: 'audit-log',
   },
+  {
+    path: '/customers/invite',
+    label: 'Invite customer',
+    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="m22 6-10 7L2 6"/></svg>',
+    adminOnly: true,
+  },
 ];
 
 export const ADMIN_TAB_MAP: Record<string, string> = {

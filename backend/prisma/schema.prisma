@@ -301,3 +301,23 @@ model OrderNotification {
 
   @@index([userId, createdAt])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Story: customer-invite — single-use, expiring customer invitations.
+// invitedById / acceptedUserId are plain FK columns (no Prisma relation) so the
+// auth User model stays untouched.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model CustomerInvitation {
+  id             String    @id @default(cuid())
+  email          String
+  companyName    String?
+  tokenHash      String    @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  acceptedUserId String?
+  invitedById    String
+  createdAt      DateTime  @default(now())
+
+  @@index([email])
+}
